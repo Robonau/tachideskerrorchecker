@@ -1,0 +1,14 @@
+version: '3.4'
+
+services:
+  tachideskautodl:
+    image: tachideskautodl
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      - URLbase=http://tachidesk:4567 # default 'http://tachidesk:4567'
+      - username=username # optional for basic auth
+      - password=password # optional for basic auth
+      - shuffeled=true # default true # go through the manga in a random order
+    restart: unless-stopped

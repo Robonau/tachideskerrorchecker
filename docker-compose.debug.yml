@@ -1,0 +1,12 @@
+version: '3.4'
+
+services:
+  tachideskautodl:
+    image: tachideskautodl
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./:/usr/src/app
+    command: ["npm", "run", "start:dev"]
+ 
