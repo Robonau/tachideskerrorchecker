@@ -1,0 +1,47 @@
+name: Build
+
+on:
+  push:
+    branches: ["Release"]
+
+jobs:
+  GenTag:
+    outputs:
+      value: ${{steps.GenTagName.outputs.value}}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Generate Tag Name
+        id: GenTagName
+        shell: bash
+        run: |
+          genTag="r$(git rev-list HEAD --count)"
+          echo "$genTag"
+          echo "value=$genTag" >> $GITHUB_OUTPUT
+  buildDocker:
+    needs: GenTag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: string
+        uses: ASzc/change-string-case-action@v5
+        with:
+          string: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          build-args: VERSION=${{ needs.GenTag.outputs.value }}
+          push: true
+          tags: ${{ steps.string.outputs.lowercase }}:latest,${{ steps.string.outputs.lowercase }}:${{ needs.GenTag.outputs.value }},
