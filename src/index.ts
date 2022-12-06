@@ -70,6 +70,34 @@ interface Chapter {
 
 const username = process.env.username || null;
 const password = process.env.password || null;
+const timeString = process.env.Interval || '';
+
+const match = timeString.match(/(?:\d\.)?\d+\s?\w/g);
+let milliseconds = 14400000;
+if (match) {
+  milliseconds = match.reduce((acc, cur) => {
+    const multiplier = 1000;
+    switch (cur.slice(-1)) {
+      case 'd':
+        return (
+          (parseFloat(cur) ? parseFloat(cur) : 0) * 24 * 60 * 60 * multiplier +
+          acc
+        );
+      case 'h':
+        return (
+          (parseFloat(cur) ? parseFloat(cur) : 0) * 60 * 60 * multiplier + acc
+        );
+      case 'm':
+        return (parseFloat(cur) ? parseFloat(cur) : 0) * 60 * multiplier + acc;
+      case 's':
+        return (parseFloat(cur) ? parseFloat(cur) : 0) * multiplier + acc;
+    }
+    return acc;
+  }, 0);
+} else {
+  milliseconds = 14400000;
+}
+if (milliseconds < 14400000) milliseconds = 14400000;
 
 const api = axios.create({
   baseURL: process.env.URLbase || ('http://tachidesk:4567' as string),
@@ -126,7 +154,12 @@ async function getChapters(mangaID: number) {
 
 async function doGetCats() {
   console.log('started at', new Date().toString());
-  api.get('/api/v1/downloads/clear');
+  try {
+    await api.get('/api/v1/downloads/clear');
+  } catch (error) {
+    console.error('9');
+    throw error;
+  }
 
   const mangas = [] as Manga[];
   try {
@@ -179,5 +212,6 @@ async function doGetCats() {
   }
   console.log('finished at', new Date().toString());
 }
+
 doGetCats();
-setInterval(doGetCats, 14400000);
+setInterval(doGetCats, milliseconds);

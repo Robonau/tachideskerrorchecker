@@ -8,5 +8,6 @@ services:
       - username=username # optional for basic auth
       - password=password # optional for basic auth
       - shuffeled=true # default true # go through the manga in a random order
+      - Interval=4h # default 4h # time between runs in '1d 4h 30m 10s' format # minimum 4h
     restart: unless-stopped
     #test
