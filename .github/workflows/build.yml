@@ -1,7 +1,7 @@
 name: Build
 
 on:
-  push:
+  pull_request:
     branches: ["Release"]
 
 jobs:
@@ -44,4 +44,6 @@ jobs:
           context: .
           build-args: VERSION=${{ needs.GenTag.outputs.value }}
           push: true
-          tags: ${{ steps.string.outputs.lowercase }}:latest,${{ steps.string.outputs.lowercase }}:${{ needs.GenTag.outputs.value }},
+          tags: |
+            ${{ steps.string.outputs.lowercase }}:${{ needs.GenTag.outputs.value }},
+            ${{ steps.string.outputs.lowercase }}:latest,
