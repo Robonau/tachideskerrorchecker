@@ -12,3 +12,4 @@ services:
       - password=password # optional for basic auth
       - shuffeled=true # default true # go through the manga in a random order
     restart: unless-stopped
+    #test
