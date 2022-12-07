@@ -103,11 +103,9 @@ const api = axios.create({
   baseURL: process.env.URLbase || 'http://tachidesk:4567',
 });
 
-console.log(api.defaults.baseURL);
 if (username !== null && password !== null) {
-  api.defaults.headers.common['Authorization'] = `Basic ${Buffer.from(
-    username + ':' + password
-  ).toString('base64')}`;
+  api.defaults.headers.common['Authorization'] =
+    'Basic ' + Buffer.from(username + ':' + password).toString('base64');
 }
 
 async function getCats() {
@@ -124,11 +122,10 @@ async function getCats() {
 
 async function getmangas(categoryID: number) {
   try {
-    const data = <AxiosResponse<Manga[]>>(
+    const { data } = <AxiosResponse<Manga[]>>(
       await api.get(`/api/v1/category/${categoryID}`)
     );
-    console.log(data);
-    return data.data;
+    return data;
   } catch (error) {
     console.log(1);
     throw error;
