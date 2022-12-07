@@ -124,15 +124,15 @@ async function getCats() {
 
 async function getmangas(categoryID: number) {
   try {
-    const { data } = <AxiosResponse<Manga[]>>(
+    const data = <AxiosResponse<Manga[]>>(
       await api.get(`/api/v1/category/${categoryID}`)
     );
-    return data;
+    console.log(data);
+    return data.data;
   } catch (error) {
     console.log(1);
     throw error;
   }
-  // console.log(`mangas in ${categoryID}, ${data.length}`)
 }
 
 async function getChapters(mangaID: number) {
