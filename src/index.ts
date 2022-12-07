@@ -100,8 +100,10 @@ if (match) {
 if (milliseconds < 14400000) milliseconds = 14400000;
 
 const api = axios.create({
-  baseURL: process.env.URLbase || ('http://tachidesk:4567' as string),
+  baseURL: process.env.URLbase || 'http://tachidesk:4567',
 });
+
+console.log(api.defaults.baseURL);
 if (username !== null && password !== null) {
   api.defaults.headers.common['Authorization'] = `Basic ${Buffer.from(
     username + ':' + password
