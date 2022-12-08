@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { AxiosResponse } from 'axios';
 
 interface source {
   id: string;
@@ -110,9 +109,7 @@ if (username !== null && password !== null) {
 
 async function getCats() {
   try {
-    const { data } = <AxiosResponse<Category[]>>(
-      await api.get('/api/v1/category')
-    );
+    const { data } = await api.get<Category[]>('/api/v1/category');
     return data;
   } catch (error) {
     console.log(6);
@@ -122,9 +119,7 @@ async function getCats() {
 
 async function getmangas(categoryID: number) {
   try {
-    const { data } = <AxiosResponse<Manga[]>>(
-      await api.get(`/api/v1/category/${categoryID}`)
-    );
+    const { data } = await api.get<Manga[]>(`/api/v1/category/${categoryID}`);
     return data;
   } catch (error) {
     console.log(1);
@@ -134,14 +129,14 @@ async function getmangas(categoryID: number) {
 
 async function getChapters(mangaID: number) {
   try {
-    const { data } = <AxiosResponse<Chapter[]>>(
-      await api.get(`/api/v1/manga/${mangaID}/chapters?onlineFetch=true`)
+    const { data } = await api.get<Chapter[]>(
+      `/api/v1/manga/${mangaID}/chapters?onlineFetch=true`
     );
     return data;
   } catch (_) {
     try {
-      const { data } = <AxiosResponse<Chapter[]>>(
-        await api.get(`/api/v1/manga/${mangaID}/chapters?onlineFetch=false`)
+      const { data } = await api.get<Chapter[]>(
+        `/api/v1/manga/${mangaID}/chapters?onlineFetch=false`
       );
       return data;
     } catch (error) {
