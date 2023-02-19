@@ -70,6 +70,7 @@ interface Chapter {
 const username = process.env.username || null;
 const password = process.env.password || null;
 const timeString = process.env.Interval || '';
+const onlyUnread = process.env.onlyUnread == 'true';
 
 const match = timeString.match(/(?:\d\.)?\d+\s?\w/g);
 let milliseconds = 14400000;
@@ -190,6 +191,9 @@ async function doGetCats() {
         try {
           const tmpp = await getChapters(tmp.id);
           const notDld = tmpp.filter((ele: Chapter) => !ele.downloaded);
+          if (onlyUnread) {
+            notDld.filter((ele: Chapter) => !ele.read);
+          }
           console.log(`manga: ${tmp.id}. chapters: ${notDld.length}`);
           if (notDld) {
             const fd = { chapterIds: notDld.map((ele: Chapter) => ele.id) };
