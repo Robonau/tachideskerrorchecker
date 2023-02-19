@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { AxiosResponse } from 'axios';
 
 interface source {
   id: string;
@@ -71,6 +70,7 @@ interface Chapter {
 const username = process.env.username || null;
 const password = process.env.password || null;
 const timeString = process.env.Interval || '';
+const onlyUnread = process.env.onlyUnread == 'true';
 
 const match = timeString.match(/(?:\d\.)?\d+\s?\w/g);
 let milliseconds = 14400000;
@@ -110,9 +110,7 @@ if (username !== null && password !== null) {
 
 async function getCats() {
   try {
-    const { data } = <AxiosResponse<Category[]>>(
-      await api.get('/api/v1/category')
-    );
+    const { data } = await api.get<Category[]>('/api/v1/category');
     return data;
   } catch (error) {
     console.log(6);
@@ -122,9 +120,7 @@ async function getCats() {
 
 async function getmangas(categoryID: number) {
   try {
-    const { data } = <AxiosResponse<Manga[]>>(
-      await api.get(`/api/v1/category/${categoryID}`)
-    );
+    const { data } = await api.get<Manga[]>(`/api/v1/category/${categoryID}`);
     return data;
   } catch (error) {
     console.log(1);
@@ -134,14 +130,14 @@ async function getmangas(categoryID: number) {
 
 async function getChapters(mangaID: number) {
   try {
-    const { data } = <AxiosResponse<Chapter[]>>(
-      await api.get(`/api/v1/manga/${mangaID}/chapters?onlineFetch=true`)
+    const { data } = await api.get<Chapter[]>(
+      `/api/v1/manga/${mangaID}/chapters?onlineFetch=true`
     );
     return data;
   } catch (_) {
     try {
-      const { data } = <AxiosResponse<Chapter[]>>(
-        await api.get(`/api/v1/manga/${mangaID}/chapters?onlineFetch=false`)
+      const { data } = await api.get<Chapter[]>(
+        `/api/v1/manga/${mangaID}/chapters?onlineFetch=false`
       );
       return data;
     } catch (error) {
@@ -195,6 +191,9 @@ async function doGetCats() {
         try {
           const tmpp = await getChapters(tmp.id);
           const notDld = tmpp.filter((ele: Chapter) => !ele.downloaded);
+          if (onlyUnread) {
+            notDld.filter((ele: Chapter) => !ele.read);
+          }
           console.log(`manga: ${tmp.id}. chapters: ${notDld.length}`);
           if (notDld) {
             const fd = { chapterIds: notDld.map((ele: Chapter) => ele.id) };
