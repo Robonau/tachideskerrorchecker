@@ -1,9 +1,21 @@
-FROM node:lts-alpine
-WORKDIR /usr/src/app
-COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
-RUN npm ci
+FROM node:19-alpine as develop-stage
+
+WORKDIR /app
+
+COPY ./package*.json ./tsconfig.json ./
+
+RUN npm install && npm cache clean --force
+
 COPY . .
+
+RUN npx prisma generate
+
 RUN npm run build
-RUN chown -R node /usr/src/app
-USER node
-CMD ["npm","run", "start","--offline","--logs-max=0"]
+
+FROM develop-stage as prod-stage
+
+RUN npx prisma db push
+
+WORKDIR /app
+
+CMD [ "npm", "run", "startjs", "--offline", "--logs-max=0" ]
