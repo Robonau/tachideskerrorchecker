@@ -107,7 +107,7 @@ async function getmangas (CategoryID: number): Promise<void> {
 
 async function getchapters (mangaID: number, IslastChapterRead: number): Promise<void> {
     const chapDL = new Promise<number[]>((resolve, reject) => {
-        network.add(async () => {
+        void network.add(async () => {
             try {
                 const chapDLIDs: number[] = []
                 const { data: chapters } = await api.get<Chapter[]>(`/api/v1/manga/${mangaID}/chapters?onlineFetch=true`)
