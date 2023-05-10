@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: ["Release"]
+    branches: ["Release",'main']
 
 jobs:
   GenTag:

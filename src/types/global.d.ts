@@ -18,6 +18,8 @@ declare global {
     name: string
     default: boolean
     size: number
+    includeInUpdate: any
+    meta: Record<string, unknown>
   }
 
   interface Manga {
@@ -40,6 +42,7 @@ declare global {
     realUrl: string
     lastFetchedAt: number
     chaptersLastFetchedAt: number
+    updateStrategy: any
     freshData: boolean
     unreadCount: number
     downloadCount: number
@@ -64,7 +67,7 @@ declare global {
     lastReadAt: number
     index: number
     fetchedAt: number
-    realUrl: string
+    realUrl?: string
     downloaded: boolean
     pageCount: number
     chapterCount: number

@@ -6,7 +6,8 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+      target: build
     volumes:
       - ./:/usr/src/app
-    command: ["npm", "run", "start:dev"]
+    command: ["npm", "start"]
  

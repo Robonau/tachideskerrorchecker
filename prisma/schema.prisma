@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
     provider      = "prisma-client-js"
     binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
@@ -11,73 +8,64 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model source {
-    id             String  @id
-    name           String
-    lang           String
-    iconUrl        String
-    supportsLatest Boolean
-    isConfigurable Boolean
-    isNsfw         Boolean
-    displayName    String
-    Manga          Manga[]
-}
-
 model Manga {
     id                      Int         @id
-    Chapters                Chapter[]   @relation("chapters")
     sourceId                String
-    source                  source      @relation(fields: [sourceId], references: [id])
-    lastChapterReadID       Int?
-    lastChapterRead         Chapter?    @relation("lastChapterRead")
-    CategoryID              Int
-    Category                Category    @relation(fields: [CategoryID], references: [id])
-    url                     String
-    title                   String
+    url                     Bytes       @db.LongBlob
+    title                   Bytes       @db.LongBlob
     thumbnailUrl            String
     thumbnailUrlLastFetched Int
     initialized             Boolean
-    artist                  String
-    author                  String
-    description             String
-    status                  String
+    artist                  String?
+    author                  String?
+    description             String?
+    status                  String?
     inLibrary               Boolean
-    inLibraryAt             Int
-    realUrl                 String
-    lastFetchedAt           Int
-    chaptersLastFetchedAt   Int
+    inLibraryAt             BigInt
+    realUrl                 Bytes?       @db.LongBlob
+    lastFetchedAt           BigInt
+    chaptersLastFetchedAt   BigInt
     freshData               Boolean
     unreadCount             Int
     downloadCount           Int
     chapterCount            Int
-    lastReadAt              Int
+    lastReadAt              BigInt?
+    lastChapterReadID       Int?
     age                     Int
     chaptersAge             Int
+    CategoryID              Int
     ChapError               ChapError[]
+    lastChapterRead         Chapter?    @relation("lastChapterRead")
+    Chapters                Chapter[]   @relation("chapters")
+    Category                Category    @relation(fields: [CategoryID], references: [id])
+
+    @@index([CategoryID], map: "Manga_CategoryID_fkey")
 }
 
 model Chapter {
     id                Int         @id
-    url               String
+    url               Bytes       @db.LongBlob
     name              String
-    uploadDate        Int
+    uploadDate        BigInt
     chapterNumber     Float
-    scanlator         String
-    manga             Manga       @relation("chapters", fields: [mangaId], references: [id])
+    scanlator         String?
     mangaId           Int
     lastChapterReadID Int?        @unique
-    lastChapterRead   Manga?      @relation("lastChapterRead", fields: [lastChapterReadID], references: [id])
     read              Boolean
     bookmarked        Boolean
     lastPageRead      Int
-    lastReadAt        Int
+    lastReadAt        BigInt
     index             Int
-    fetchedAt         Int
-    realUrl           String
+    fetchedAt         BigInt
+    realUrl           Bytes?       @db.LongBlob
     downloaded        Boolean
     pageCount         Int
     chapterCount      Int
     ChapError         ChapError[]
+    lastChapterRead   Manga?      @relation("lastChapterRead", fields: [lastChapterReadID], references: [id])
+    manga             Manga       @relation("chapters", fields: [mangaId], references: [id])
+
+    @@index([mangaId], map: "Chapter_mangaId_fkey")
 }
 
 model Category {
@@ -90,9 +78,12 @@ model Category {
 }
 
 model ChapError {
-    id        Int     @id @default(autoincrement())
-    manga     Manga   @relation(fields: [mangaId], references: [id])
-    mangaId   Int
-    lastread  Chapter? @relation(fields: [lastreadId], references: [id])
+    id         Int      @id @default(autoincrement())
+    mangaId    Int
     lastreadId Int?
+    lastread   Chapter? @relation(fields: [lastreadId], references: [id])
+    manga      Manga    @relation(fields: [mangaId], references: [id])
+
+    @@index([lastreadId], map: "ChapError_lastreadId_fkey")
+    @@index([mangaId], map: "ChapError_mangaId_fkey")
 }

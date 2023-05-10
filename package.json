@@ -7,7 +7,7 @@
   "scripts": {
     "start": "npx ts-node src/index.ts",
     "build": "npx tsc",
-    "startjs": "node dist/index.js",
+    "startjs": "npx tsc;node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "eslint": "eslint --color --ext .html,.js,.json,.jsx,.md,.ts,.tsx *.* src",
     "eslint:fix": "npm run eslint -- --fix"
@@ -30,7 +30,6 @@
     "axios": "^1.4.0",
     "p-queue": "^7.3.4",
     "prisma": "^4.13.0",
-    "ts-node": "^10.9.1",
-    "tsc": "^2.0.4"
+    "ts-node": "^10.9.1"
   }
 }
