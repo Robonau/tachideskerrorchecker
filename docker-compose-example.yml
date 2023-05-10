@@ -1,0 +1,17 @@
+version: '3.4'
+
+services:
+  tachideskautodl:
+    image: ghcr.io/robonau/tachideskautodl:latest
+    environment:
+      - URLbase=http://tachidesk:4567 # default 'http://tachidesk:4567'
+      - username=username # optional for basic auth
+      - password=password # optional for basic auth
+      - shuffeled=true # default true # go through the manga in a random order
+      - Interval=4h # default 4h # time between runs in '1d 4h 30m 10s' format # minimum 4h
+      - onlyUnread=false # default false # if true only download unread chapters
+      - DATABASE_URL=mysql://databaseuser:databasepass@192.168.1.100:3306/database # optional, it just wont try find errors
+      - webhookURL=https://discord.com/api/webhooks/foo/bar # optional send errors to a discord webhook
+      - displayURL=https://tachidesk.example.com # optional, used by webhook
+    restart: unless-stopped
+    read_only: true
