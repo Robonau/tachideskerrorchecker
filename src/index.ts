@@ -1,6 +1,7 @@
 import axios from 'axios'
 import PQueue from 'p-queue'
 import { PrismaClient, type Chapter as prisChapter } from '@prisma/client'
+import { EmbedBuilder, WebhookClient, AttachmentBuilder } from 'discord.js'
 
 const db = process.env.DATABASE_URL !== undefined
 
@@ -23,8 +24,12 @@ const password = process.env.password ?? null
 const timeString = process.env.Interval ?? ''
 const onlyUnread = process.env.onlyUnread === 'true'
 const shuffeled = (process.env.shuffeled === 'true' || process.env.shuffeled === undefined)
-const displayurl = process.env.displayurl
-const webhookURL = process.env.webhookURL
+const displayurl = process.env.displayURL
+let webhookClient: WebhookClient
+
+if (process.env.webhookURL !== undefined) {
+    webhookClient = new WebhookClient({ url: process.env.webhookURL })
+}
 
 const match = timeString.match(/(?:\d\.)?\d+\s?\w/g)
 let milliseconds = 14400000
@@ -207,7 +212,9 @@ async function getchapters (
                                     orderBy: { index: 'asc' }
                                 })
                                     .then((chap) => {
-                                        void errortodat(manga.id, chap?.pop()?.id)
+                                        const tmpchap = chap[chap.length - 1]
+                                        void discorderr(manga, tmpchap)
+                                        void errortodat(manga.id, tmpchap?.id)
                                     })
                                     .catch(() => {
                                         void errortodat(manga.id)
@@ -282,72 +289,42 @@ async function comparechapters (
     const isread = chapters.filter((ele) => ele.read)
     if (readCountDB.length > isread.length) {
         console.log('readCountDB last', readCountDB[readCountDB.length - 1])
-        console.log('isread last', isread[isread.length - 1])
+        console.log('isread last', isread[0])
+        void discorderr(manga, readCountDB[readCountDB.length - 1], isread[0])
         const lastreadId = readCountDB[readCountDB.length - 1].id
-        discorderr(manga, readCountDB[readCountDB.length - 1], isread[isread.length - 1])
         await errortodat(manga.id, lastreadId)
     }
 }
 
-interface discordembed {
-    title: string
-    description: string
-    url: string
-    color: number
-    thumbnail?: {
-      url: string
-    }
-  }
-
-interface discordhook {
-    content: string
-    embeds: discordembed[]
-    attachments: []
-  }
-
-function discorderr (manga: Manga, lastchapter: prisChapter, newchapter: Chapter): void {
-    let dispurl: string
-    let msgcontent: discordhook
-    if (displayurl !== undefined) {
-        dispurl = `${displayurl}${manga.thumbnailUrl}`
-        msgcontent = {
-            content: 'Tachidesk Weirdness:',
-            embeds: [
-                {
-                    title: manga.title,
-                    description: `old chapter : ${lastchapter.name}\nnew chapter : ${newchapter.name}\nthis is unexpected`,
-                    url: `${displayurl}/manga/${manga.id}/`,
-                    color: 5814783,
-                    thumbnail: {
-                        url: dispurl
-                    }
-                }
-            ],
-            attachments: []
-        }
+async function discorderr (manga: Manga, lastchapter: prisChapter | null = null, newchapter: Chapter | null = null): Promise<void> {
+    const imgdata = await getBase64(manga.thumbnailUrl)
+    const file = new AttachmentBuilder(imgdata, {
+        name: 'img.jpeg'
+    })
+    const msgcontent = new EmbedBuilder()
+        .setTitle(manga.title)
+        .setColor(5814783)
+        .setThumbnail('attachment://img.jpeg')
+    if (lastchapter !== null && newchapter !== null) {
+        msgcontent
+            .setDescription(`Old Chapter: ${lastchapter.name}\nNew Chapter: ${newchapter.name}\nthis is unexpected`)
+    } else if (lastchapter !== null) {
+        msgcontent
+            .setDescription(`there was an error getting chapter data for mangaID: '${manga.id}'\nthe last known chapter was '${lastchapter.name}'`)
     } else {
-        msgcontent = {
-            content: 'Tachidesk Weirdness:',
-            embeds: [
-                {
-                    title: manga.title,
-                    description: `old chapter : ${lastchapter.name}\nnew chapter : ${newchapter.name}\nthis is unexpected`,
-                    url: `http://localhost:4567/manga/${manga.id}/`,
-                    color: 5814783
-                }
-            ],
-            attachments: []
-        }
+        msgcontent
+            .setDescription(`there was an error getting chapter data for mangaID: ${manga.id}\n last chapter unknown`)
     }
-    const data = JSON.stringify({ msgcontent })
-    if (webhookURL !== undefined) {
-        const config = {
-            method: 'POST',
-            url: webhookURL,
-            headers: { 'Content-Type': 'application/json' },
-            data
-        }
-        void axios.request(config)
+    if (displayurl !== undefined) {
+        msgcontent
+            .setURL(process.env.displayURLVUI === 'true' ? `${displayurl}/#/manga/${manga.id}/` : `${displayurl}/manga/${manga.id}/`)
+    }
+    if (webhookClient !== undefined) {
+        void webhookClient.send({
+            content: 'Tachidesk Weirdness:',
+            embeds: [msgcontent],
+            files: [file]
+        })
     }
 }
 
@@ -386,4 +363,12 @@ function shuffle<T> (arra: T[]): T[] {
         return arra
     }
     return arra
+}
+
+async function getBase64 (uri: string): Promise<Buffer> {
+    return await api
+        .get(uri, {
+            responseType: 'arraybuffer'
+        })
+        .then(response => Buffer.from(response.data, 'binary'))
 }
