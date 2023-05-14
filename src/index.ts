@@ -197,7 +197,7 @@ async function getchapters (
                     chapters.push(...data)
                 } catch (error) {
                     try {
-                        console.log('onlineFetch=true failed trying false')
+                        console.log('onlineFetch=true failed trying offline fetch')
                         const { data } = await api.get<Chapter[]>(
                             `/api/v1/manga/${manga.id}/chapters?onlineFetch=false`
                         )
@@ -228,6 +228,17 @@ async function getchapters (
                 if (prisma !== undefined) {
                     await comparechapters(chapters, manga)
                 }
+                await new Promise<void>((resolve) => {
+                    void database.add(async () => {
+                        if (prisma !== undefined) {
+                            await prisma.chapter.updateMany({
+                                where: { id: { not: { in: chapters.map(ele => ele.id) } }, mangaId: manga.id },
+                                data: { read: false }
+                            })
+                        }
+                        resolve()
+                    })
+                })
                 for (const { id, meta, url, realUrl, ...rest } of chapters) {
                     try {
                         let data: undefined | number
@@ -294,7 +305,7 @@ async function comparechapters (
         console.log('isread last', isread[0])
         void discorderr(manga, readCountDB[readCountDB.length - 1], isread[0])
         const lastreadId = readCountDB[readCountDB.length - 1].id
-        await errortodat(manga.id, lastreadId)
+        void errortodat(manga.id, lastreadId)
     }
 }
 
