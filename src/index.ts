@@ -5,7 +5,7 @@ import { EmbedBuilder, WebhookClient, AttachmentBuilder } from 'discord.js'
 
 const db = process.env.DATABASE_URL !== undefined
 
-const network = new PQueue({ concurrency: 2, autoStart: true })
+const network = new PQueue({ concurrency: 1, autoStart: true })
 const database = new PQueue({ concurrency: 1, autoStart: true })
 
 network.on('idle', () => {
@@ -197,6 +197,7 @@ async function getchapters (
                     chapters.push(...data)
                 } catch (error) {
                     try {
+                        console.log('onlineFetch=true failed trying false')
                         const { data } = await api.get<Chapter[]>(
                             `/api/v1/manga/${manga.id}/chapters?onlineFetch=false`
                         )
@@ -217,6 +218,7 @@ async function getchapters (
                                         void errortodat(manga.id, tmpchap?.id)
                                     })
                                     .catch(() => {
+                                        void discorderr(manga)
                                         void errortodat(manga.id)
                                     })
                             }
