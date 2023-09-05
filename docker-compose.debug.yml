@@ -2,11 +2,17 @@ version: '3.4'
 
 services:
   tachideskautodl:
-    image: tachideskautodl
     build:
       context: .
       dockerfile: ./Dockerfile
+      target: build
+    environment:
+      - URLbase
+      - username
+      - password
+      - DATABASE_URL
+      - webhookURL
     volumes:
       - ./:/usr/src/app
-    command: ["npm", "run", "start:dev"]
+    command: ["npm","run", "dev"]
  

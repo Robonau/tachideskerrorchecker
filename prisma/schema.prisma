@@ -1,0 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Manga {
+  id            Int         @id @map("_id")
+  title         String
+  lastFetchedAt String
+  thumbnailUrl  String
+  chapters      chapters[]
+  ChapError     ChapError[]
+}
+
+model chapters {
+  id            Int         @id @map("_id")
+  chapterNumber Int
+  sourceOrder   Int
+  isRead        Boolean
+  isDownloaded  Boolean
+  name          String
+  Manga         Manga       @relation(fields: [MangaId], references: [id])
+  MangaId       Int
+  ChapError     ChapError[]
+}
+
+model ChapError {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  mangaId    Int
+  lastreadId Int?
+  lastread   chapters? @relation(fields: [lastreadId], references: [id])
+  manga      Manga     @relation(fields: [mangaId], references: [id])
+}

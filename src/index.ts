@@ -1,215 +1,265 @@
-import axios from 'axios';
+import { GraphQLClient } from 'graphql-request';
+import { MangasQuery, MangasDocument, MangaDocument, MangaQueryVariables, ClearDownloaderDocument, FetchMangaChaptersDocument, FetchMangaChaptersMutation, FetchMangaChaptersMutationVariables, MangaQuery, MangaEdge, EnqueueChapterDownloadsMutation, EnqueueChapterDownloadsDocument, EnqueueChapterDownloadsMutationVariables } from './gql/graphql';
+import { url } from './makeURL';
+import { PrismaClient } from '@prisma/client'
+import { EmbedBuilder, WebhookClient, AttachmentBuilder } from 'discord.js'
 
-interface source {
-  id: string;
-  name: string;
-  lang: string;
-  iconUrl: string;
-  supportsLatest: boolean;
-  isConfigurable: boolean;
-  isNsfw: boolean;
-  displayName: string;
+import dotenv from "dotenv"
+dotenv.config()
+
+
+console.log('hi');
+
+
+const db = process.env.DATABASE_URL !== undefined
+let prisma: PrismaClient | undefined = undefined
+if (db) {
+	prisma = new PrismaClient()
+}
+let webhookClient: WebhookClient | undefined
+
+if (process.env.webhookURL !== undefined) {
+	webhookClient = new WebhookClient({ url: process.env.webhookURL })
 }
 
-interface Category {
-  id: number;
-  order: number;
-  name: string;
-  default: boolean;
-  meta: object;
+const client = new GraphQLClient(`${url}/api/graphql`);
+
+async function GetMangas(): Promise<MangasQuery['mangas']['nodes'] | undefined> {
+	try {
+		const res = await client.request<MangasQuery>(MangasDocument.toString());
+		return res?.mangas.nodes
+	} catch (error) {
+		return undefined
+	}
+};
+
+async function FetchManga(manga: MangasQuery['mangas']['nodes'][0]): Promise<MangaQuery['manga'] | undefined> {
+	try {
+		const res = await client.request<FetchMangaChaptersMutation, FetchMangaChaptersMutationVariables>(
+			FetchMangaChaptersDocument.toString(),
+			{ id: manga.id }
+		);
+		return { ...res.fetchManga.manga, chapters: { nodes: res.fetchChapters.chapters } }
+	} catch (error) {
+		return undefined
+	}
 }
 
-interface Manga {
-  id: number;
-  sourceId: string;
-  url: string;
-  title: string;
-  thumbnailUrl: string;
-  initialized: boolean;
-  artist: string;
-  author: string;
-  description: string;
-  genre: string[];
-  status: string;
-  inLibrary: boolean;
-  inLibraryAt: number;
-  source: source;
-  meta: Record<string, unknown>;
-  realUrl: string;
-  lastFetchedAt: number;
-  chaptersLastFetchedAt: number;
-  freshData: boolean;
-  unreadCount: number;
-  downloadCount: number;
-  chapterCount: number;
-  lastChapterRead: Chapter;
-  age: number;
-  chaptersAge: number;
+async function GetManga(manga: MangasQuery['mangas']['nodes'][0]): Promise<MangaQuery['manga'] | undefined> {
+	try {
+		const res = await client.request<MangaQuery, MangaQueryVariables>(
+			MangaDocument.toString(),
+			{ id: manga.id }
+		);
+		return res.manga
+	} catch (error) {
+		return undefined
+	}
 }
 
-interface Chapter {
-  id: number;
-  url: string;
-  name: string;
-  uploadDate: number;
-  chapterNumber: number;
-  scanlator: string;
-  mangaId: number;
-  read: boolean;
-  bookmarked: boolean;
-  lastPageRead: number;
-  lastReadAt: number;
-  index: number;
-  fetchedAt: number;
-  downloaded: boolean;
-  pageCount: number;
-  chapterCount: number;
-  meta: Record<string, unknown>;
+function idsSame(mag1: MangaQuery['manga'], mag2: MangaQuery['manga']) {
+	if (mag1.chapters.nodes.find((element, index) => element.id !== mag2.chapters.nodes[index].id) === undefined) {
+		return true
+	}
+	return false
 }
 
-const username = process.env.username || null;
-const password = process.env.password || null;
-const timeString = process.env.Interval || '';
-const onlyUnread = process.env.onlyUnread == 'true';
-
-const match = timeString.match(/(?:\d\.)?\d+\s?\w/g);
-let milliseconds = 14400000;
-if (match) {
-  milliseconds = match.reduce((acc, cur) => {
-    const multiplier = 1000;
-    switch (cur.slice(-1)) {
-      case 'd':
-        return (
-          (parseFloat(cur) ? parseFloat(cur) : 0) * 24 * 60 * 60 * multiplier +
-          acc
-        );
-      case 'h':
-        return (
-          (parseFloat(cur) ? parseFloat(cur) : 0) * 60 * 60 * multiplier + acc
-        );
-      case 'm':
-        return (parseFloat(cur) ? parseFloat(cur) : 0) * 60 * multiplier + acc;
-      case 's':
-        return (parseFloat(cur) ? parseFloat(cur) : 0) * multiplier + acc;
-    }
-    return acc;
-  }, 0);
-} else {
-  milliseconds = 14400000;
-}
-if (milliseconds < 14400000) milliseconds = 14400000;
-
-const api = axios.create({
-  baseURL: process.env.URLbase || 'http://tachidesk:4567',
-});
-
-if (username !== null && password !== null) {
-  api.defaults.headers.common['Authorization'] =
-    'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+async function DLchapts(ids: number[]): Promise<void> {
+	try {
+		await client.request<EnqueueChapterDownloadsMutation, EnqueueChapterDownloadsMutationVariables>(
+			EnqueueChapterDownloadsDocument.toString(),
+			{ ids }
+		);
+	} catch (error) { }
 }
 
-async function getCats() {
-  try {
-    const { data } = await api.get<Category[]>('/api/v1/category');
-    return data;
-  } catch (error) {
-    console.log(6);
-    throw error;
-  }
+async function PrismaGetManga(id: number): Promise<MangaQuery['manga'] | undefined> {
+	const prim = await prisma?.manga.findUnique({
+		where: { id },
+		select: {
+			id: true,
+			title: true,
+			lastFetchedAt: true,
+			chapters: {
+				select: {
+					id: true,
+					chapterNumber: true,
+					isDownloaded: true,
+					sourceOrder: true,
+					isRead: true,
+					name: true
+				}
+			}
+		}
+	})
+	if (!prim) { return undefined }
+	return { ...prim, chapters: { nodes: prim.chapters } }
 }
 
-async function getmangas(categoryID: number) {
-  try {
-    const { data } = await api.get<Manga[]>(`/api/v1/category/${categoryID}`);
-    return data;
-  } catch (error) {
-    console.log(1);
-    throw error;
-  }
+function HighestChapterRead(manga: MangaQuery['manga']): MangaQuery['manga']['lastReadChapter'] {
+	return manga.chapters.nodes.reduce((a, c) => {
+		return c.sourceOrder > (a?.sourceOrder || -1) && c.isRead ? c : a
+	}, undefined as MangaQuery['manga']['lastReadChapter'] | undefined)
 }
 
-async function getChapters(mangaID: number) {
-  try {
-    const { data } = await api.get<Chapter[]>(
-      `/api/v1/manga/${mangaID}/chapters?onlineFetch=true`
-    );
-    return data;
-  } catch (_) {
-    try {
-      const { data } = await api.get<Chapter[]>(
-        `/api/v1/manga/${mangaID}/chapters?onlineFetch=false`
-      );
-      return data;
-    } catch (error) {
-      console.log(2);
-      throw error;
-    }
-  }
+async function run() {
+	console.log('started at', new Date().toString())
+	try {
+		await client.request(ClearDownloaderDocument.toString())
+	} catch (error) { }
+	const mangas = await GetMangas()
+	const chapsToDownload: number[] = []
+	if (mangas) {
+		for (let manga of shuffle<typeof mangas[0]>(mangas)) {
+			console.log(`id: ${manga.id} name: ${manga.title}`);
+			await prisma?.manga.upsert({
+				create: {
+					id: manga.id,
+					title: manga.title,
+					lastFetchedAt: manga.lastFetchedAt,
+					thumbnailUrl: manga.thumbnailUrl || ''
+				},
+				update: {
+					title: manga.title,
+					lastFetchedAt: manga.lastFetchedAt,
+					thumbnailUrl: manga.thumbnailUrl || ''
+				},
+				where: {
+					id: manga.id
+				},
+			})
+			let mag = await FetchManga(manga)
+			if (mag === undefined) {
+				mag = await GetManga(manga)
+			}
+			const prima = await PrismaGetManga(manga.id)
+			if (mag !== undefined) {
+				dealWithManga(prima, mag)
+			} else {
+				//this manga is dead, no responce from either fetch or current
+				if (prima) {
+					prisma?.chapters.deleteMany({ where: { id: manga.id } })
+				}
+			}
+		}
+		await DLchapts(chapsToDownload)
+	}
 }
 
-async function doGetCats() {
-  console.log('started at', new Date().toString());
-  try {
-    await api.get('/api/v1/downloads/clear');
-  } catch (error) {
-    console.error('9');
-    throw error;
-  }
-
-  const mangas = [] as Manga[];
-  try {
-    const Categories = await getCats();
-    console.log(Categories);
-    for (const cat in Categories) {
-      const tmp = Categories[cat];
-      if (tmp != undefined) {
-        try {
-          mangas.push(...(await getmangas(tmp.id)));
-          console.log(`Category: ${tmp.id}, numMangas ${mangas.length}`);
-        } catch (error) {
-          console.log(`Category: ${tmp.id}, errored ${error}`);
-        }
-      }
-    }
-  } catch (error) {
-    console.log(7);
-    throw error;
-  }
-
-  const shuffeled =
-    process.env.shuffeled == 'false'
-      ? mangas
-      : mangas
-          .map((value) => ({ value, sort: Math.random() }))
-          .sort((a, b) => a.sort - b.sort)
-          .map(({ value }) => value);
-
-  try {
-    for (const manga in shuffeled) {
-      const tmp = shuffeled[manga];
-      if (tmp != undefined) {
-        try {
-          const tmpp = await getChapters(tmp.id);
-          const notDld = tmpp.filter((ele: Chapter) => !ele.downloaded);
-          if (onlyUnread) {
-            notDld.filter((ele: Chapter) => !ele.read);
-          }
-          console.log(`manga: ${tmp.id}. chapters: ${notDld.length}`);
-          if (notDld) {
-            const fd = { chapterIds: notDld.map((ele: Chapter) => ele.id) };
-            api.post('/api/v1/download/batch', fd);
-          }
-        } catch (error) {
-          console.log(`manga: ${tmp.id}, errored ${error}`);
-        }
-      }
-    }
-  } catch (error) {
-    console.log(8);
-    throw error;
-  }
-  console.log('finished at', new Date().toString());
+function dealWithManga(manga: MangaQuery['manga'] | undefined, mag: MangaQuery['manga']) {
+	const chapsToDownload: number[] = []
+	mag.chapters.nodes.forEach(ma => {
+		if (!ma.isDownloaded) {
+			chapsToDownload.push(ma.id)
+		}
+	})
+	if (manga && (manga.chapters.nodes.length !== mag.chapters.nodes.length || !idsSame(manga, mag))) {
+		const oldHighestChapterRead = HighestChapterRead(manga)
+		const newHighestChapterRead = HighestChapterRead(mag)
+		if ((oldHighestChapterRead?.sourceOrder || -1) > (newHighestChapterRead?.sourceOrder || -1)) {
+			discorderr(manga, oldHighestChapterRead, newHighestChapterRead)
+			// current highest read chapter is lower than before, prisma ChapError and disocrd webhook
+		}
+	}
+	updateCreateChapterEntry(mag)
+	return chapsToDownload
 }
 
-doGetCats();
-setInterval(doGetCats, milliseconds);
+async function updateCreateChapterEntry(manga: MangaQuery['manga']): Promise<void> {
+	if (prisma) {
+		console.log('updating chapters in db');
+		prisma?.chapters.deleteMany({
+			where: {
+				MangaId: manga.id,
+				id: {
+					notIn: manga.chapters.nodes.map(e => e.id)
+				}
+			}
+		})
+		for (let chap of manga.chapters.nodes) {
+			let { __typename, ...create } = { ...chap, MangaId: manga.id }
+			let { id, ...update } = create
+			await prisma?.chapters.upsert({
+				create,
+				update,
+				where: {
+					id
+				},
+			})
+		}
+	}
+}
+
+async function main() {
+	if (prisma !== undefined) {
+		try {
+			await prisma.$connect()
+		} catch (error) {
+			console.log(error);
+		}
+	}
+	void run()
+	setInterval(() => {
+		void run()
+	}, 14400000)
+}
+
+main().catch(async (e) => {
+	console.error(e)
+	if (prisma !== undefined) {
+		await prisma.$disconnect()
+	}
+	await new Promise((resolve) => setTimeout(resolve, 60000))
+	process.exit(1)
+})
+
+async function discorderr(manga: MangaQuery['manga'], lastchapter: MangaQuery['manga']['lastReadChapter'] | null = null, newchapter: MangaQuery['manga']['lastReadChapter'] | null = null): Promise<void> {
+	let imgdata = await getBase64(manga.thumbnailUrl)
+	const file = new AttachmentBuilder(imgdata, {
+		name: 'img.jpeg'
+	})
+	const msgcontent = new EmbedBuilder()
+		.setTitle(manga.title)
+		.setColor(5814783)
+		.setThumbnail('attachment://img.jpeg')
+	if (lastchapter !== null && newchapter !== null) {
+		msgcontent
+			.setDescription(`Old Chapter: ${lastchapter.name}\nNew Chapter: ${newchapter.name}\nthis is unexpected`)
+	} else if (lastchapter !== null) {
+		msgcontent
+			.setDescription(`there was an error getting chapter data for mangaID: '${manga.id}'\nthe last known chapter was '${lastchapter.name}'`)
+	} else {
+		msgcontent
+			.setDescription(`there was an error getting chapter data for mangaID: ${manga.id}\n last chapter unknown`)
+	}
+	msgcontent
+		.setURL(`${url}/manga/${manga.id}/`)
+	if (webhookClient !== undefined) {
+		void webhookClient.send({
+			content: 'Tachidesk Weirdness:',
+			embeds: [msgcontent],
+			files: [file]
+		})
+	}
+}
+
+async function getBase64(uri: string | undefined | null): Promise<Buffer> {
+	try {
+		return await fetch(`${url}${uri}`)
+			.then(res => res.arrayBuffer())
+			.then(res => Buffer.from(res))
+	} catch (error) {
+		return Buffer.from('')
+	}
+}
+
+function shuffle<T>(arra: T[]): T[] {
+	let currentIndex = arra.length; let randomIndex
+	while (currentIndex !== 0) {
+		randomIndex = Math.floor(Math.random() * currentIndex)
+		currentIndex--;
+		[arra[currentIndex], arra[randomIndex]] = [
+			arra[randomIndex], arra[currentIndex]]
+	}
+	return arra
+}

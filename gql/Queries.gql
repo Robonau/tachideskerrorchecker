@@ -1,0 +1,54 @@
+query mangas {
+  mangas(condition: { inLibrary: true }) {
+    nodes {
+      id
+      title
+      lastFetchedAt
+      thumbnailUrl
+      chapters {
+        nodes {
+          chapterNumber
+          id
+          isDownloaded
+          sourceOrder
+          isRead
+        }
+      }
+      lastReadChapter {
+        name
+        chapterNumber
+        id
+        isDownloaded
+        sourceOrder
+        isRead
+      }
+    }
+  }
+}
+
+query manga($id: Int!) {
+  manga(id: $id) {
+    id
+    title
+    lastFetchedAt
+    thumbnailUrl
+    chapters {
+      nodes {
+        name
+        chapterNumber
+        id
+        isDownloaded
+        sourceOrder
+        isRead
+      }
+    }
+    lastReadChapter {
+      name
+      chapterNumber
+      id
+      isDownloaded
+      sourceOrder
+      isRead
+    }
+  }
+}

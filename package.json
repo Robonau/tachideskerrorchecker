@@ -1,37 +1,28 @@
 {
-  "name": "tachideskautodl",
+  "name": "tachideskautodl3",
   "version": "1.0.0",
-  "description": "update and download manga chapters from tachidesk",
-  "main": "index.ts",
-  "type": "module",
-  "scripts": {
-    "lint": "eslint --ext .js,.ts,.vue ./",
-    "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore",
-    "start:dev": "nodemon",
-    "build": "rimraf ./build && tsc",
-    "start": "node build/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
+  "description": "",
+  "main": "index.js",
   "devDependencies": {
-    "@types/node": "^18.11.9",
-    "@typescript-eslint/eslint-plugin": "^5.43.0",
-    "@typescript-eslint/parser": "^5.43.0",
-    "eslint": "^8.28.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-config-standard-with-typescript": "^23.0.0",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-n": "^15.5.1",
-    "eslint-plugin-promise": "^6.1.1",
-    "nodemon": "^2.0.20",
-    "prettier": "^2.8.0",
-    "rimraf": "^3.0.2",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.3"
+    "@graphql-codegen/cli": "5.0.0",
+    "@graphql-codegen/client-preset": "4.1.0",
+    "prisma": "^5.2.0"
   },
   "dependencies": {
-    "axios": "^1.2.1"
-  }
+    "@prisma/client": "^5.2.0",
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "graphql": "16.8.0",
+    "graphql-request": "5.2.0",
+    "graphql-yoga": "4.0.4",
+    "ts-node": "^10.9.1"
+  },
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.ts",
+    "build": "tsc",
+    "dev": "ts-node src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
