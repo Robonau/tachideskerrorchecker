@@ -1,10 +1,10 @@
-FROM node:20 as dependencies
+FROM node:18 as dependencies
 
 WORKDIR /app
 COPY ./package*.json ./tsconfig.json ./
 RUN npm install && npm cache clean --force
 
-FROM node:20 AS build
+FROM node:18 AS build
 
 WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
@@ -14,7 +14,7 @@ RUN npm run build
 # COPY startup.sh .
 RUN chmod +x startup.sh
 
-FROM node:20 AS deploy
+FROM node:18 AS deploy
 
 ENV NODE_ENV production
 

@@ -1,36 +1,28 @@
 {
-  "name": "tachideskautodl",
+  "name": "tachideskautodl3",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.ts",
-  "type": "module",
+  "main": "index.js",
+  "devDependencies": {
+    "@graphql-codegen/cli": "5.0.0",
+    "@graphql-codegen/client-preset": "4.1.0",
+    "prisma": "^5.2.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.2.0",
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "graphql": "16.8.0",
+    "graphql-request": "5.2.0",
+    "graphql-yoga": "4.0.4",
+    "ts-node": "^10.9.1"
+  },
   "scripts": {
-    "start": "npx ts-node src/index.ts",
-    "build": "npx tsc",
-    "startjs": "npx tsc;node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "eslint": "eslint --color --ext .html,.js,.json,.jsx,.md,.ts,.tsx *.* src",
-    "eslint:fix": "npm run eslint -- --fix"
+    "codegen": "graphql-codegen --config codegen.ts",
+    "build": "tsc",
+    "dev": "ts-node src/index.ts"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@tsconfig/node19": "^2.0.0",
-    "@typescript-eslint/eslint-plugin": "^5.59.2",
-    "eslint": "^8.39.0",
-    "eslint-config-standard-with-typescript": "^34.0.1",
-    "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-n": "^15.7.0",
-    "eslint-plugin-promise": "^6.1.1",
-    "typescript": "^5.0.4"
-  },
-  "dependencies": {
-    "@prisma/client": "^4.13.0",
-    "axios": "^1.4.0",
-    "discord.js": "^14.11.0",
-    "p-queue": "^7.3.4",
-    "prisma": "^4.13.0",
-    "ts-node": "^10.9.1"
-  }
+  "license": "ISC"
 }

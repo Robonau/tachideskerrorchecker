@@ -1,23 +1,12 @@
 {
-  "extends": "@tsconfig/node19/tsconfig.json",
   "compilerOptions": {
-    "module": "ESNext",
-    "esModuleInterop": true,
-    "target": "ESNext",
-    "moduleResolution": "Node",
-    "outDir": "dist",
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "isolatedModules": false,
+    "target": "es2020",
+    "module": "commonjs",
     "strict": true,
-    "noImplicitAny": true,
-    "useUnknownInCatchVariables": false,
-    "inlineSourceMap": true
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "dist"
   },
-  "include": ["src"],
-  "exclude": ["node_modules"],
-  "ts-node": {
-    "esm": true
-  },
-  "lib": ["esnext"]
+  "include": ["src/**/*.ts"]
 }

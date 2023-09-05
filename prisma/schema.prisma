@@ -1,89 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
-    provider      = "prisma-client-js"
-    binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "mysql"
-    url      = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model Manga {
-    id                      Int         @id
-    sourceId                String
-    url                     Bytes       @db.LongBlob
-    title                   Bytes       @db.LongBlob
-    thumbnailUrl            String
-    thumbnailUrlLastFetched Int
-    initialized             Boolean
-    artist                  String?
-    author                  String?
-    description             String?
-    status                  String?
-    inLibrary               Boolean
-    inLibraryAt             BigInt
-    realUrl                 Bytes?       @db.LongBlob
-    lastFetchedAt           BigInt
-    chaptersLastFetchedAt   BigInt
-    freshData               Boolean
-    unreadCount             Int
-    downloadCount           Int
-    chapterCount            Int
-    lastReadAt              BigInt?
-    lastChapterReadID       Int?
-    age                     Int
-    chaptersAge             Int
-    CategoryID              Int
-    ChapError               ChapError[]
-    lastChapterRead         Chapter?    @relation("lastChapterRead")
-    Chapters                Chapter[]   @relation("chapters")
-    Category                Category    @relation(fields: [CategoryID], references: [id])
-
-    @@index([CategoryID], map: "Manga_CategoryID_fkey")
+  id            Int         @id @map("_id")
+  title         String
+  lastFetchedAt String
+  thumbnailUrl  String
+  chapters      chapters[]
+  ChapError     ChapError[]
 }
 
-model Chapter {
-    id                Int         @id
-    url               Bytes       @db.LongBlob
-    name              String
-    uploadDate        BigInt
-    chapterNumber     Float
-    scanlator         String?
-    mangaId           Int
-    lastChapterReadID Int?        @unique
-    read              Boolean
-    bookmarked        Boolean
-    lastPageRead      Int
-    lastReadAt        BigInt
-    index             Int
-    fetchedAt         BigInt
-    realUrl           Bytes?       @db.LongBlob
-    downloaded        Boolean
-    pageCount         Int
-    chapterCount      Int
-    ChapError         ChapError[]
-    lastChapterRead   Manga?      @relation("lastChapterRead", fields: [lastChapterReadID], references: [id])
-    manga             Manga       @relation("chapters", fields: [mangaId], references: [id])
-
-    @@index([mangaId], map: "Chapter_mangaId_fkey")
-}
-
-model Category {
-    id      Int     @id
-    order   Int
-    name    String
-    default Boolean
-    size    Int
-    mangas  Manga[]
+model chapters {
+  id            Int         @id @map("_id")
+  chapterNumber Int
+  sourceOrder   Int
+  isRead        Boolean
+  isDownloaded  Boolean
+  name          String
+  Manga         Manga       @relation(fields: [MangaId], references: [id])
+  MangaId       Int
+  ChapError     ChapError[]
 }
 
 model ChapError {
-    id         Int      @id @default(autoincrement())
-    mangaId    Int
-    lastreadId Int?
-    lastread   Chapter? @relation(fields: [lastreadId], references: [id])
-    manga      Manga    @relation(fields: [mangaId], references: [id])
-
-    @@index([lastreadId], map: "ChapError_lastreadId_fkey")
-    @@index([mangaId], map: "ChapError_mangaId_fkey")
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  mangaId    Int
+  lastreadId Int?
+  lastread   chapters? @relation(fields: [lastreadId], references: [id])
+  manga      Manga     @relation(fields: [mangaId], references: [id])
 }
