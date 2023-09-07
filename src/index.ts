@@ -115,7 +115,7 @@ async function run() {
             }
             const prima = await PrismaGetManga(manga.id)
             if (mag !== undefined) {
-                dealWithManga(prima, mag)
+                chapsToDownload.push(...dealWithManga(prima, mag))
             } else {
                 //this manga is dead, no responce from either fetch or current
                 if (prima) {
