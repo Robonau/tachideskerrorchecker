@@ -42,10 +42,7 @@ async function GetManga(manga: MangasQuery['mangas']['nodes'][0]): Promise<Manga
 }
 
 function idsSame(mag1: MangaQuery['manga'], mag2: MangaQuery['manga']) {
-    if (mag1.chapters.nodes.find((element, index) => element.id !== mag2.chapters.nodes[index].id) === undefined) {
-        return true
-    }
-    return false
+    return !mag1.chapters.nodes.find((element, index) => element.id !== mag2.chapters.nodes[index].id)
 }
 
 async function DLchapts(ids: number[]): Promise<void> {
@@ -145,7 +142,8 @@ function dealWithManga(manga: MangaQuery['manga'] | undefined, mag: MangaQuery['
     if (
         (!manga && prisma) ||
         (oldHighestChapterRead?.sourceOrder || -1) !== (newHighestChapterRead?.sourceOrder || -1) ||
-        manga?.chapters.nodes.length !== mag.chapters.nodes.length
+        manga?.chapters.nodes.length !== mag.chapters.nodes.length ||
+        !idsSame(manga, mag)
     ) {
         updateCreateChapterEntry(mag)
     }
