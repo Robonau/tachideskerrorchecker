@@ -22,7 +22,6 @@ export async function getBase64(uri: string | undefined | null): Promise<Buffer>
             return Buffer.from('')
         })
     return tmp
-
 }
 
 export function shuffle<T>(arra: T[]): T[] {
