@@ -2060,7 +2060,7 @@ export type StartDownloaderMutation = { __typename?: 'Mutation', startDownloader
 export type MangasQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MangasQuery = { __typename?: 'Query', mangas: { __typename?: 'MangaNodeList', nodes: Array<{ __typename?: 'MangaType', id: number, title: string, lastFetchedAt?: any | null, thumbnailUrl?: string | null, chapters: { __typename?: 'ChapterNodeList', nodes: Array<{ __typename?: 'ChapterType', chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean }> }, lastReadChapter?: { __typename?: 'ChapterType', name: string, chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean } | null }> } };
+export type MangasQuery = { __typename?: 'Query', mangas: { __typename?: 'MangaNodeList', nodes: Array<{ __typename?: 'MangaType', id: number, title: string, lastFetchedAt?: any | null, thumbnailUrl?: string | null, chapters: { __typename?: 'ChapterNodeList', nodes: Array<{ __typename?: 'ChapterType', name: string, chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean }> }, lastReadChapter?: { __typename?: 'ChapterType', name: string, chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean } | null }> } };
 
 export type MangaQueryVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -2149,6 +2149,7 @@ export const MangasDocument = new TypedDocumentString(`
       thumbnailUrl
       chapters {
         nodes {
+          name
           chapterNumber
           id
           isDownloaded

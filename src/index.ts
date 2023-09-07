@@ -1,26 +1,10 @@
 import { GraphQLClient } from 'graphql-request';
 import { MangasQuery, MangasDocument, MangaDocument, MangaQueryVariables, ClearDownloaderDocument, FetchMangaChaptersDocument, FetchMangaChaptersMutation, FetchMangaChaptersMutationVariables, MangaQuery, MangaEdge, EnqueueChapterDownloadsMutation, EnqueueChapterDownloadsDocument, EnqueueChapterDownloadsMutationVariables } from './gql/graphql';
-import { url } from './makeURL';
-import { PrismaClient } from '@prisma/client'
-import { EmbedBuilder, WebhookClient, AttachmentBuilder } from 'discord.js'
+import { getBase64, prisma, shuffle, url, webhookClient } from './util';
+import { EmbedBuilder, AttachmentBuilder } from 'discord.js'
 
 import dotenv from "dotenv"
 dotenv.config()
-
-
-console.log('hi');
-
-
-const db = process.env.DATABASE_URL !== undefined
-let prisma: PrismaClient | undefined = undefined
-if (db) {
-	prisma = new PrismaClient()
-}
-let webhookClient: WebhookClient | undefined
-
-if (process.env.webhookURL !== undefined) {
-	webhookClient = new WebhookClient({ url: process.env.webhookURL })
-}
 
 const client = new GraphQLClient(`${url}/api/graphql`);
 
@@ -110,39 +94,40 @@ async function run() {
 	const mangas = await GetMangas()
 	const chapsToDownload: number[] = []
 	if (mangas) {
-		for (let manga of shuffle<typeof mangas[0]>(mangas)) {
-			console.log(`id: ${manga.id} name: ${manga.title}`);
-			await prisma?.manga.upsert({
-				create: {
-					id: manga.id,
-					title: manga.title,
-					lastFetchedAt: manga.lastFetchedAt,
-					thumbnailUrl: manga.thumbnailUrl || ''
-				},
-				update: {
-					title: manga.title,
-					lastFetchedAt: manga.lastFetchedAt,
-					thumbnailUrl: manga.thumbnailUrl || ''
-				},
-				where: {
-					id: manga.id
-				},
-			})
-			let mag = await FetchManga(manga)
-			if (mag === undefined) {
-				mag = await GetManga(manga)
-			}
-			const prima = await PrismaGetManga(manga.id)
-			if (mag !== undefined) {
-				dealWithManga(prima, mag)
-			} else {
-				//this manga is dead, no responce from either fetch or current
-				if (prima) {
-					prisma?.chapters.deleteMany({ where: { id: manga.id } })
-				}
-			}
-		}
-		await DLchapts(chapsToDownload)
+		// for (let manga of shuffle<typeof mangas[0]>(mangas)) {
+		// 	console.log(`id: ${manga.id} name: ${manga.title}`);
+		// 	await prisma?.manga.upsert({
+		// 		create: {
+		// 			id: manga.id,
+		// 			title: manga.title,
+		// 			lastFetchedAt: manga.lastFetchedAt,
+		// 			thumbnailUrl: manga.thumbnailUrl || ''
+		// 		},
+		// 		update: {
+		// 			title: manga.title,
+		// 			lastFetchedAt: manga.lastFetchedAt,
+		// 			thumbnailUrl: manga.thumbnailUrl || ''
+		// 		},
+		// 		where: {
+		// 			id: manga.id
+		// 		},
+		// 	})
+		// 	let mag = await FetchManga(manga)
+		// 	if (mag === undefined) {
+		// 		mag = await GetManga(manga)
+		// 	}
+		// 	const prima = await PrismaGetManga(manga.id)
+		// 	if (mag !== undefined) {
+		// 		dealWithManga(prima, mag)
+		// 	} else {
+		// 		//this manga is dead, no responce from either fetch or current
+		// 		if (prima) {
+		// 			prisma?.chapters.deleteMany({ where: { id: manga.id } })
+		// 		}
+		// 	}
+		// }
+		// await DLchapts(chapsToDownload)
+        discorderr(mangas[0],mangas[0].lastReadChapter)
 	}
 }
 
@@ -198,10 +183,11 @@ async function main() {
 			console.log(error);
 		}
 	}
+
 	void run()
-	setInterval(() => {
-		void run()
-	}, 14400000)
+	// setInterval(() => {
+	// 	void run()
+	// }, 14400000)
 }
 
 main().catch(async (e) => {
@@ -243,23 +229,3 @@ async function discorderr(manga: MangaQuery['manga'], lastchapter: MangaQuery['m
 	}
 }
 
-async function getBase64(uri: string | undefined | null): Promise<Buffer> {
-	try {
-		return await fetch(`${url}${uri}`)
-			.then(res => res.arrayBuffer())
-			.then(res => Buffer.from(res))
-	} catch (error) {
-		return Buffer.from('')
-	}
-}
-
-function shuffle<T>(arra: T[]): T[] {
-	let currentIndex = arra.length; let randomIndex
-	while (currentIndex !== 0) {
-		randomIndex = Math.floor(Math.random() * currentIndex)
-		currentIndex--;
-		[arra[currentIndex], arra[randomIndex]] = [
-			arra[randomIndex], arra[currentIndex]]
-	}
-	return arra
-}

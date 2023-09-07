@@ -7,6 +7,7 @@ query mangas {
       thumbnailUrl
       chapters {
         nodes {
+          name
           chapterNumber
           id
           isDownloaded

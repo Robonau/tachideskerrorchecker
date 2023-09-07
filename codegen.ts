@@ -1,6 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { CodegenConfig } from '@graphql-codegen/cli';
-import { url } from './src/makeURL';
+import { url } from './src/util';
 
 const config: CodegenConfig = {
   schema: `${url}/api/graphql`,
