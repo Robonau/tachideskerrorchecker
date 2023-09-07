@@ -137,15 +137,18 @@ function dealWithManga(manga: MangaQuery['manga'] | undefined, mag: MangaQuery['
             chapsToDownload.push(ma.id)
         }
     })
-    if (manga && (manga.chapters.nodes.length !== mag.chapters.nodes.length || !idsSame(manga, mag))) {
-        const oldHighestChapterRead = HighestChapterRead(manga)
-        const newHighestChapterRead = HighestChapterRead(mag)
-        if ((oldHighestChapterRead?.sourceOrder || -1) > (newHighestChapterRead?.sourceOrder || -1)) {
-            discorderr(manga, oldHighestChapterRead, newHighestChapterRead)
-            // current highest read chapter is lower than before, prisma ChapError and disocrd webhook
-        }
+    const oldHighestChapterRead = manga ? HighestChapterRead(manga) : undefined
+    const newHighestChapterRead = HighestChapterRead(mag)
+    if (manga && (oldHighestChapterRead?.sourceOrder || -1) > (newHighestChapterRead?.sourceOrder || -1)) {
+        discorderr(manga, oldHighestChapterRead, newHighestChapterRead)
     }
-    updateCreateChapterEntry(mag)
+    if (
+        (!manga && prisma) ||
+        (oldHighestChapterRead?.sourceOrder || -1) !== (newHighestChapterRead?.sourceOrder || -1) ||
+        manga?.chapters.nodes.length !== mag.chapters.nodes.length
+    ) {
+        updateCreateChapterEntry(mag)
+    }
     return chapsToDownload
 }
 
