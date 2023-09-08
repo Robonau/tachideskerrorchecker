@@ -89,8 +89,8 @@ async function run() {
         await client.request(ClearDownloaderDocument.toString())
     } catch (error) { }
     const mangas = await GetMangas()
-    const chapsToDownload: number[] = []
     if (mangas) {
+        const chapsToDownload: number[] = []
         for (let manga of shuffle<typeof mangas[0]>(mangas)) {
             console.log(`id: ${manga.id} name: ${manga.title}`);
             await prisma?.manga.upsert({
@@ -123,6 +123,8 @@ async function run() {
                 }
             }
         }
+        console.log(`downloading chapters:`);
+        console.log(chapsToDownload);
         await DLchapts(chapsToDownload)
     }
 }
