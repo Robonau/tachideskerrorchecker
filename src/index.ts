@@ -138,6 +138,7 @@ function dealWithManga(manga: MangaQuery['manga'] | undefined, mag: MangaQuery['
     const newHighestChapterRead = HighestChapterRead(mag)
     if (manga && (oldHighestChapterRead?.sourceOrder || -1) > (newHighestChapterRead?.sourceOrder || -1)) {
         discorderr(manga, oldHighestChapterRead, newHighestChapterRead)
+        updateCreateChapterEntry(mag)
     }
     if (
         (!manga && prisma) ||
