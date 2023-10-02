@@ -2033,41 +2033,10 @@ export type WebUiUpdateStatus = {
   state: UpdateState;
 };
 
-export type FetchMangaChaptersMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
-}>;
-
-
-export type FetchMangaChaptersMutation = { __typename?: 'Mutation', fetchManga: { __typename?: 'FetchMangaPayload', manga: { __typename?: 'MangaType', id: number, title: string, lastFetchedAt?: any | null, thumbnailUrl?: string | null, lastReadChapter?: { __typename?: 'ChapterType', name: string, chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean } | null } }, fetchChapters: { __typename?: 'FetchChaptersPayload', chapters: Array<{ __typename?: 'ChapterType', name: string, chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean }> } };
-
-export type ClearDownloaderMutationVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ClearDownloaderMutation = { __typename?: 'Mutation', clearDownloader: { __typename?: 'ClearDownloaderPayload', downloadStatus: { __typename?: 'DownloadStatus', state: DownloaderState } } };
-
-export type EnqueueChapterDownloadsMutationVariables = Exact<{
-  ids: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
-}>;
-
-
-export type EnqueueChapterDownloadsMutation = { __typename?: 'Mutation', enqueueChapterDownloads: { __typename?: 'EnqueueChapterDownloadsPayload', clientMutationId?: string | null } };
-
-export type StartDownloaderMutationVariables = Exact<{ [key: string]: never; }>;
-
-
-export type StartDownloaderMutation = { __typename?: 'Mutation', startDownloader: { __typename?: 'StartDownloaderPayload', downloadStatus: { __typename?: 'DownloadStatus', state: DownloaderState } } };
-
 export type MangasQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MangasQuery = { __typename?: 'Query', mangas: { __typename?: 'MangaNodeList', nodes: Array<{ __typename?: 'MangaType', id: number, title: string, lastFetchedAt?: any | null, thumbnailUrl?: string | null, chapters: { __typename?: 'ChapterNodeList', nodes: Array<{ __typename?: 'ChapterType', name: string, chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean }> }, lastReadChapter?: { __typename?: 'ChapterType', name: string, chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean } | null }> } };
-
-export type MangaQueryVariables = Exact<{
-  id: Scalars['Int']['input'];
-}>;
-
-
-export type MangaQuery = { __typename?: 'Query', manga: { __typename?: 'MangaType', id: number, title: string, lastFetchedAt?: any | null, thumbnailUrl?: string | null, chapters: { __typename?: 'ChapterNodeList', nodes: Array<{ __typename?: 'ChapterType', name: string, chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean }> }, lastReadChapter?: { __typename?: 'ChapterType', name: string, chapterNumber: number, id: number, isDownloaded: boolean, sourceOrder: number, isRead: boolean } | null } };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -2084,61 +2053,6 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
-export const FetchMangaChaptersDocument = new TypedDocumentString(`
-    mutation fetchMangaChapters($id: Int!) {
-  fetchManga(input: {id: $id}) {
-    manga {
-      id
-      title
-      lastFetchedAt
-      thumbnailUrl
-      lastReadChapter {
-        name
-        chapterNumber
-        id
-        isDownloaded
-        sourceOrder
-        isRead
-      }
-    }
-  }
-  fetchChapters(input: {mangaId: $id}) {
-    chapters {
-      name
-      chapterNumber
-      id
-      isDownloaded
-      sourceOrder
-      isRead
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<FetchMangaChaptersMutation, FetchMangaChaptersMutationVariables>;
-export const ClearDownloaderDocument = new TypedDocumentString(`
-    mutation clearDownloader {
-  clearDownloader(input: {clientMutationId: ""}) {
-    downloadStatus {
-      state
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<ClearDownloaderMutation, ClearDownloaderMutationVariables>;
-export const EnqueueChapterDownloadsDocument = new TypedDocumentString(`
-    mutation enqueueChapterDownloads($ids: [Int!]!) {
-  enqueueChapterDownloads(input: {ids: $ids}) {
-    clientMutationId
-  }
-}
-    `) as unknown as TypedDocumentString<EnqueueChapterDownloadsMutation, EnqueueChapterDownloadsMutationVariables>;
-export const StartDownloaderDocument = new TypedDocumentString(`
-    mutation startDownloader {
-  startDownloader(input: {clientMutationId: ""}) {
-    downloadStatus {
-      state
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<StartDownloaderMutation, StartDownloaderMutationVariables>;
 export const MangasDocument = new TypedDocumentString(`
     query mangas {
   mangas(condition: {inLibrary: true}) {
@@ -2169,31 +2083,3 @@ export const MangasDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MangasQuery, MangasQueryVariables>;
-export const MangaDocument = new TypedDocumentString(`
-    query manga($id: Int!) {
-  manga(id: $id) {
-    id
-    title
-    lastFetchedAt
-    thumbnailUrl
-    chapters {
-      nodes {
-        name
-        chapterNumber
-        id
-        isDownloaded
-        sourceOrder
-        isRead
-      }
-    }
-    lastReadChapter {
-      name
-      chapterNumber
-      id
-      isDownloaded
-      sourceOrder
-      isRead
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<MangaQuery, MangaQueryVariables>;

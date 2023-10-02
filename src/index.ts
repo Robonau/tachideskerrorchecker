@@ -1,10 +1,9 @@
 import { GraphQLClient } from 'graphql-request';
-import { MangasQuery, MangasDocument, MangaDocument, MangaQueryVariables, ClearDownloaderDocument, FetchMangaChaptersDocument, FetchMangaChaptersMutation, FetchMangaChaptersMutationVariables, MangaQuery, MangaEdge, EnqueueChapterDownloadsMutation, EnqueueChapterDownloadsDocument, EnqueueChapterDownloadsMutationVariables } from './gql/graphql';
-import { getBase64, prisma, shuffle, url, webhookClient } from './util';
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js'
+import { MangasQuery, MangasDocument } from './gql/graphql';
+import { getBase64, isEqual, prisma, shuffle, sleep, url, webhookClient } from './util';
 
-import dotenv from "dotenv"
-dotenv.config()
+type MangaQuery = MangasQuery['mangas']['nodes'][0]
 
 const client = new GraphQLClient(`${url}/api/graphql`);
 
@@ -17,46 +16,14 @@ async function GetMangas(): Promise<MangasQuery['mangas']['nodes'] | undefined> 
     }
 };
 
-async function FetchManga(manga: MangasQuery['mangas']['nodes'][0]): Promise<MangaQuery['manga'] | undefined> {
-    try {
-        const res = await client.request<FetchMangaChaptersMutation, FetchMangaChaptersMutationVariables>(
-            FetchMangaChaptersDocument.toString(),
-            { id: manga.id }
-        );
-        return { ...res.fetchManga.manga, chapters: { nodes: res.fetchChapters.chapters } }
-    } catch (error) {
-        return undefined
-    }
+function idsSame(mag1: MangaQuery, mag2: MangaQuery) {
+    const tmp1 = mag1.chapters.nodes.map(e => e.id)
+    const tmp2 = mag2.chapters.nodes.map(e => e.id)
+    return !tmp1.find((e) => !tmp2.includes(e)) && !tmp2.find((e) => !tmp1.includes(e))
 }
 
-async function GetManga(manga: MangasQuery['mangas']['nodes'][0]): Promise<MangaQuery['manga'] | undefined> {
-    try {
-        const res = await client.request<MangaQuery, MangaQueryVariables>(
-            MangaDocument.toString(),
-            { id: manga.id }
-        );
-        return res.manga
-    } catch (error) {
-        return undefined
-    }
-}
-
-function idsSame(mag1: MangaQuery['manga'], mag2: MangaQuery['manga']) {
-    return !mag1.chapters.nodes.find((element, index) => element.id !== mag2.chapters.nodes[index].id)
-}
-
-async function DLchapts(ids: number[]): Promise<void> {
-    try {
-        await client.request<EnqueueChapterDownloadsMutation, EnqueueChapterDownloadsMutationVariables>(
-            EnqueueChapterDownloadsDocument.toString(),
-            { ids }
-        );
-    } catch (error) { }
-}
-
-async function PrismaGetManga(id: number): Promise<MangaQuery['manga'] | undefined> {
-    const prim = await prisma?.manga.findUnique({
-        where: { id },
+async function PrismaGetMangas(): Promise<MangaQuery[] | undefined> {
+    const prim = await prisma?.manga.findMany({
         select: {
             id: true,
             title: true,
@@ -74,73 +41,65 @@ async function PrismaGetManga(id: number): Promise<MangaQuery['manga'] | undefin
         }
     })
     if (!prim) { return undefined }
-    return { ...prim, chapters: { nodes: prim.chapters } }
+    return prim.map(pri => ({ ...pri, chapters: { nodes: pri.chapters } }))
 }
 
-function HighestChapterRead(manga: MangaQuery['manga']): MangaQuery['manga']['lastReadChapter'] {
+function HighestChapterRead(manga: MangaQuery): MangaQuery['lastReadChapter'] {
     return manga.chapters.nodes.reduce((a, c) => {
         return c.sourceOrder > (a?.sourceOrder || -1) && c.isRead ? c : a
-    }, undefined as MangaQuery['manga']['lastReadChapter'] | undefined)
+    }, undefined as MangaQuery['lastReadChapter'] | undefined)
 }
 
 async function run() {
     console.log('started at', new Date().toString())
-    try {
-        await client.request(ClearDownloaderDocument.toString())
-    } catch (error) { }
     const mangas = await GetMangas()
-    if (mangas) {
-        const chapsToDownload: number[] = []
+    if (mangas && prisma) {
+        const pmias = await PrismaGetMangas()
         for (let manga of shuffle<typeof mangas[0]>(mangas)) {
+            const prima = pmias?.find(ele => ele.id === manga.id)
             console.log(`id: ${manga.id} name: ${manga.title}`);
-            await prisma?.manga.upsert({
-                create: {
-                    id: manga.id,
-                    title: manga.title,
-                    lastFetchedAt: manga.lastFetchedAt,
-                    thumbnailUrl: manga.thumbnailUrl || ''
-                },
-                update: {
-                    title: manga.title,
-                    lastFetchedAt: manga.lastFetchedAt,
-                    thumbnailUrl: manga.thumbnailUrl || ''
-                },
-                where: {
-                    id: manga.id
-                },
-            })
-            let mag = await FetchManga(manga)
-            if (mag === undefined) {
-                mag = await GetManga(manga)
-            }
-            const prima = await PrismaGetManga(manga.id)
-            if (mag !== undefined) {
-                chapsToDownload.push(...dealWithManga(prima, mag))
-            } else {
-                //this manga is dead, no responce from either fetch or current
-                if (prima) {
-                    prisma?.chapters.deleteMany({ where: { id: manga.id } })
-                }
+            await dealWithManga(prima, manga)
+        }
+        await deleteExess(pmias, mangas);
+    }
+    console.log('finished at', new Date().toString())
+}
+
+async function deleteExess(pmias: MangaQuery[] | undefined, mangas: MangaQuery[]) {
+    if (pmias) {
+        for (let pmia of pmias) {
+            const manga = mangas?.find(e => e.id === pmia.id);
+            if (manga && (pmia.chapters.nodes.length > manga.chapters.nodes.length || !idsSame(manga, pmia))) {
+                console.log(`deleting exess ${pmia.id} chapters`);
+                await prisma?.chapters.deleteMany({
+                    where: {
+                        MangaId: pmia.id,
+                        id: {
+                            notIn: manga.chapters.nodes.map(e => e.id)
+                        }
+                    }
+                });
+            } else if (!manga) {
+                console.log(`deleting ${pmia.id} manga and chapters, since it no longer exists in tachidesk`);
+                await prisma?.chapters.deleteMany({
+                    where: {
+                        MangaId: pmia.id,
+                    }
+                });
+                await prisma?.manga.delete({
+                    where: { id: pmia.id }
+                });
             }
         }
-        console.log(`downloading chapters:`);
-        console.log(chapsToDownload);
-        await DLchapts(chapsToDownload)
     }
 }
 
-function dealWithManga(manga: MangaQuery['manga'] | undefined, mag: MangaQuery['manga']) {
-    const chapsToDownload: number[] = []
-    mag.chapters.nodes.forEach(ma => {
-        if (!ma.isDownloaded) {
-            chapsToDownload.push(ma.id)
-        }
-    })
+async function dealWithManga(manga: MangaQuery | undefined, mag: MangaQuery) {
     const oldHighestChapterRead = manga ? HighestChapterRead(manga) : undefined
     const newHighestChapterRead = HighestChapterRead(mag)
     if (manga && (oldHighestChapterRead?.sourceOrder || -1) > (newHighestChapterRead?.sourceOrder || -1)) {
-        discorderr(manga, oldHighestChapterRead, newHighestChapterRead)
-        updateCreateChapterEntry(mag)
+        await discorderr(manga, oldHighestChapterRead, newHighestChapterRead)
+        await updateCreateChapterEntry(mag, manga)
     }
     if (
         (!manga && prisma) ||
@@ -148,33 +107,39 @@ function dealWithManga(manga: MangaQuery['manga'] | undefined, mag: MangaQuery['
         manga?.chapters.nodes.length !== mag.chapters.nodes.length ||
         !idsSame(manga, mag)
     ) {
-        updateCreateChapterEntry(mag)
+        console.log((!manga && prisma));
+        console.log((oldHighestChapterRead?.sourceOrder || -1) !== (newHighestChapterRead?.sourceOrder || -1));
+        console.log(manga?.chapters.nodes.length !== mag.chapters.nodes.length);
+        if (manga) {
+            console.log(!idsSame(manga, mag));
+            console.log(manga.chapters.nodes.map(e => e.id));
+            console.log(mag.chapters.nodes.map(e => e.id));
+        }
+
+        await updateCreateChapterEntry(mag, manga)
     }
-    return chapsToDownload
 }
 
-async function updateCreateChapterEntry(manga: MangaQuery['manga']): Promise<void> {
+async function updateCreateChapterEntry(manga: MangaQuery, old: MangaQuery | undefined): Promise<void> {
     if (prisma) {
         console.log('updating chapters in db');
-        prisma?.chapters.deleteMany({
-            where: {
-                MangaId: manga.id,
-                id: {
-                    notIn: manga.chapters.nodes.map(e => e.id)
-                }
-            }
-        })
         for (let chap of manga.chapters.nodes) {
-            let { __typename, ...create } = { ...chap, MangaId: manga.id }
-            let { id, ...update } = create
-            await prisma?.chapters.upsert({
-                create,
-                update,
-                where: {
-                    id
-                },
-            })
+            const oldchap = old?.chapters.nodes.find(e => e.id === chap.id)
+            if (!oldchap || !isEqual(oldchap, chap)) {
+                console.log(chap.id);
+
+                let { __typename, ...create } = { ...chap, MangaId: manga.id }
+                let { id, ...update } = create
+                await prisma?.chapters.upsert({
+                    create,
+                    update,
+                    where: {
+                        id
+                    },
+                })
+            }
         }
+        console.log('updating done');
     }
 }
 
@@ -202,7 +167,7 @@ main().catch(async (e) => {
     process.exit(1)
 })
 
-async function discorderr(manga: MangaQuery['manga'], lastchapter: MangaQuery['manga']['lastReadChapter'] | null = null, newchapter: MangaQuery['manga']['lastReadChapter'] | null = null): Promise<void> {
+async function discorderr(manga: MangaQuery, lastchapter: MangaQuery['lastReadChapter'] | null = null, newchapter: MangaQuery['lastReadChapter'] | null = null): Promise<void> {
     let imgdata = await getBase64(manga.thumbnailUrl)
     const file = new AttachmentBuilder(imgdata, {
         name: 'img.jpeg'

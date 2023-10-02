@@ -1,55 +1,55 @@
 query mangas {
-  mangas(condition: { inLibrary: true }) {
-    nodes {
-      id
-      title
-      lastFetchedAt
-      thumbnailUrl
-      chapters {
+    mangas(condition: { inLibrary: true }) {
         nodes {
-          name
-          chapterNumber
-          id
-          isDownloaded
-          sourceOrder
-          isRead
+            id
+            title
+            lastFetchedAt
+            thumbnailUrl
+            chapters {
+                nodes {
+                    name
+                    chapterNumber
+                    id
+                    isDownloaded
+                    sourceOrder
+                    isRead
+                }
+            }
+            lastReadChapter {
+                name
+                chapterNumber
+                id
+                isDownloaded
+                sourceOrder
+                isRead
+            }
         }
-      }
-      lastReadChapter {
-        name
-        chapterNumber
-        id
-        isDownloaded
-        sourceOrder
-        isRead
-      }
     }
-  }
 }
 
-query manga($id: Int!) {
-  manga(id: $id) {
-    id
-    title
-    lastFetchedAt
-    thumbnailUrl
-    chapters {
-      nodes {
-        name
-        chapterNumber
-        id
-        isDownloaded
-        sourceOrder
-        isRead
-      }
-    }
-    lastReadChapter {
-      name
-      chapterNumber
-      id
-      isDownloaded
-      sourceOrder
-      isRead
-    }
-  }
-}
+# query manga($id: Int!) {
+#   manga(id: $id) {
+#     id
+#     title
+#     lastFetchedAt
+#     thumbnailUrl
+#     chapters {
+#       nodes {
+#         name
+#         chapterNumber
+#         id
+#         isDownloaded
+#         sourceOrder
+#         isRead
+#       }
+#     }
+#     lastReadChapter {
+#       name
+#       chapterNumber
+#       id
+#       isDownloaded
+#       sourceOrder
+#       isRead
+#     }
+#   }
+# }

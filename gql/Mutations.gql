@@ -1,50 +1,50 @@
-mutation fetchMangaChapters($id: Int!) {
-  fetchManga(input: { id: $id }) {
-    manga {
-      id
-      title
-      lastFetchedAt
-      thumbnailUrl
-      lastReadChapter {
-        name
-        chapterNumber
-        id
-        isDownloaded
-        sourceOrder
-        isRead
-      }
-    }
-  }
-  fetchChapters(input: { mangaId: $id }) {
-    chapters {
-      name
-      chapterNumber
-      id
-      isDownloaded
-      sourceOrder
-      isRead
-    }
-  }
-}
+# mutation fetchMangaChapters($id: Int!) {
+#   fetchManga(input: { id: $id }) {
+#     manga {
+#       id
+#       title
+#       lastFetchedAt
+#       thumbnailUrl
+#       lastReadChapter {
+#         name
+#         chapterNumber
+#         id
+#         isDownloaded
+#         sourceOrder
+#         isRead
+#       }
+#     }
+#   }
+#   fetchChapters(input: { mangaId: $id }) {
+#     chapters {
+#       name
+#       chapterNumber
+#       id
+#       isDownloaded
+#       sourceOrder
+#       isRead
+#     }
+#   }
+# }
 
-mutation clearDownloader {
-  clearDownloader(input: { clientMutationId: "" }) {
-    downloadStatus {
-      state
-    }
-  }
-}
+# mutation clearDownloader {
+#   clearDownloader(input: { clientMutationId: "" }) {
+#     downloadStatus {
+#       state
+#     }
+#   }
+# }
 
-mutation enqueueChapterDownloads($ids: [Int!]!) {
-  enqueueChapterDownloads(input: { ids: $ids }) {
-    clientMutationId
-  }
-}
+# mutation enqueueChapterDownloads($ids: [Int!]!) {
+#   enqueueChapterDownloads(input: { ids: $ids }) {
+#     clientMutationId
+#   }
+# }
 
-mutation startDownloader {
-  startDownloader(input: { clientMutationId: "" }) {
-    downloadStatus {
-      state
-    }
-  }
-}
+# mutation startDownloader {
+#   startDownloader(input: { clientMutationId: "" }) {
+#     downloadStatus {
+#       state
+#     }
+#   }
+# }
